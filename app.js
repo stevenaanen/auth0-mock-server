@@ -2,27 +2,28 @@ process.env.DEBUG = 'app*';
 
 var express = require('express');
 var app = express();
+var https = require('https');
 var jwt = require('jsonwebtoken');
+var fs = require('fs');
 var Debug = require('debug');
-var path = require('path');
 var cors = require('cors');
 var bodyParser = require('body-parser');
-var favicon = require('serve-favicon');
 
 var debug = Debug('app');
-
 
 // Configure our small auth0-mock-server
 app.options('*', cors())
     .use(cors())
     .use(bodyParser.json())
-    .use(bodyParser.urlencoded({ extended: true }))
-    .use(express.static(`${__dirname}/public`))
-    .use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+    .use(bodyParser.urlencoded({ extended: true }));
 
+    // Welcome route (to accept untrusted https cert in browser)
+    app.get('/', function (req,res) {
+        res.send('Awesome, you have access to the OAuth mock service');
+    });
 
 // This route can be used to generate a valid jwt-token.
-app.post('/token', function (req, res) {
+app.post('/oauth/token', function (req, res) {
     if (!req.body.email || !req.body.password) {
         debug('Body is invalid!');
         return res.status(400).send('Email or password is missing!');
@@ -35,7 +36,7 @@ app.post('/token', function (req, res) {
 });
 
 // This route can be used to generate a valid jwt-token.
-app.get('/token/:email', function (req, res) {
+app.get('/oauth/token/:email', function (req, res) {
     if (!req.params.email) {
         debug('No user was given!');
         return res.status(400).send('user is missing');
@@ -50,7 +51,7 @@ app.get('/token/:email', function (req, res) {
 
 // This route returns the inside of a jwt-token. Your main application
 // should use this route to keep the auth0-flow
-app.post('/tokeninfo', function (req, res) {
+app.post('/oauth/tokeninfo', function (req, res) {
     if (!req.body.id_token) {
         debug('No token given in the body!');
         return res.status(401).send('missing id_token');
@@ -65,7 +66,11 @@ app.post('/tokeninfo', function (req, res) {
     }
 });
 
-
-app.listen(3333, function () {
-    debug('Auth0-Mock-Server listening on port 3333!');
-});
+https.createServer({
+    key: fs.readFileSync('server.key'),
+    cert: fs.readFileSync('server.cert')
+}, app)
+    .listen(3000, function () {
+    debug('Auth0-Mock-Server listening on port 3000!');
+        console.log('Example app listening on port 3000! Go to https://localhost:3000/')
+    })

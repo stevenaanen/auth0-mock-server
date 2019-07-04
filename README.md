@@ -36,14 +36,12 @@ Returns the data of the token like the username.
 ```
 
 
-## Related Projects
-* [express-typescript-boilerplate](https://github.com/w3tecch/express-typescript-boilerplate) - Boilerplate for an restful express-apllication written in TypeScript
-* [express-graphql-typescript-boilerplate](https://github.com/w3tecch/express-graphql-typescript-boilerplate) - A starter kit for building amazing GraphQL API's with TypeScript and express by @w3tecch
+## Other stuff
+
+Used this to generate https cert
+
+`openssl req -nodes -new -x509 -keyout server.key -out server.cert`
 
 
 ## License
 [MIT](/LICENSE)
-
-
----
-Made with ♥ by Gery Hirschfeld ([@GeryHirschfeld1](https://twitter.com/GeryHirschfeld1))
