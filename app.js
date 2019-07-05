@@ -2,6 +2,7 @@ process.env.DEBUG = 'app*';
 
 var express = require('express');
 var app = express();
+var querystring = require('querystring');
 var https = require('https');
 var jwt = require('jsonwebtoken');
 var fs = require('fs');
@@ -17,10 +18,88 @@ app.options('*', cors())
     .use(bodyParser.json())
     .use(bodyParser.urlencoded({ extended: true }));
 
-    // Welcome route (to accept untrusted https cert in browser)
-    app.get('/', function (req,res) {
-        res.send('Awesome, you have access to the OAuth mock service');
-    });
+// Welcome route (to accept untrusted https cert in browser)
+app.get('/', function (req, res) {
+    res.send('Awesome, you have access to the OAuth mock service');
+});
+
+// app.get('/authorize', function (req, res) {
+//     const { response_type, client_id, redirect_uri, state } = req.query;
+//     debug('authorize', req.query);
+//     var access_token = jwt.sign({
+//         user_id: 'auth0|useremail',
+//     }, 'auth0-mock');
+//     const id_token = 'auth0-mock:idtoken';
+
+//     const params = {
+//         access_token,
+//         id_token,
+//         state,
+//         token_type: 'Bearer',
+//         expires_in: 7200,
+//     };
+
+//     res.setHeader("x-auth0-requestid", "blablabla");
+
+//     res.send();
+// });
+
+app.get('/authorize', function (req, res) {
+    const { response_type, client_id, scope, nonce, redirect_uri, state } = req.query;
+    debug('authorize', req.query);
+
+    const tokenOptions = {
+        algorithm: "HS256",
+        expiresIn: 7200,
+        issuer: "https://localhost:3000/",
+        audience: "http://localhost",
+        noTimestamp: false,
+    };
+    var access_token = jwt.sign({
+        user_id: 'auth0|useremail',
+        scopes: scope,
+    }, 'auth0-mock', tokenOptions);
+
+    var id_token = jwt.sign({
+        name: "Username",
+        picture: "",
+    }, 'auth0-mock', tokenOptions);
+
+    const params = {
+        access_token,
+        // id_token,
+        state,
+        token_type: 'Bearer',
+        expires_in: 7200,
+    };
+    const queryString = querystring.stringify(params);
+
+    const url = `${redirect_uri}#${queryString}`;
+    debug('redirect to', url);
+    res.redirect(url);
+});
+
+app.get('/login', function (req, res) {
+    const { response_type, client_id, redirect_uri, state } = req.query;
+    debug('login', req.query);
+    var access_token = jwt.sign({
+        user_id: 'auth0|useremail',
+    }, 'auth0-mock');
+    const id_token = 'auth0-mock:idtoken';
+
+    const params = {
+        access_token,
+        id_token,
+        state,
+        token_type: 'Bearer',
+        expires_in: 7200,
+    };
+    const queryString = querystring.stringify(params);
+
+    const url = `${redirect_uri}?${queryString}`;
+    debug('redirect to', url);
+    res.redirect(url);
+});
 
 // This route can be used to generate a valid jwt-token.
 app.post('/oauth/token', function (req, res) {
@@ -71,6 +150,6 @@ https.createServer({
     cert: fs.readFileSync('server.cert')
 }, app)
     .listen(3000, function () {
-    debug('Auth0-Mock-Server listening on port 3000!');
+        debug('Auth0-Mock-Server listening on port 3000!');
         console.log('Example app listening on port 3000! Go to https://localhost:3000/')
     })
